@@ -13,6 +13,7 @@ url = os.getenv('DEFAULT_DISC_URL')
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix='!', intents=intents)
 ctx = commands.Context
+client = discord.Client(intents=intents)
 
 # testing syn & ack for bot comms
 @bot.command()
@@ -78,5 +79,15 @@ async def test(ctx):
     # #print(datetime.now())
 
 #asyncio.run(retrieve_messages('1081830736480436295'))
+
+# event that checks when someone has joined a voice channel
+@bot.event
+async def on_voice_state_update(member, before, after):
+    current_date_utc = datetime.datetime.now()
+    voice_message_on_join = f'{member} joined voice channel {after.channel} at {str(current_date_utc)}'
+    
+    if before.channel is None and after.channel is not None:
+        get_log_channel = await bot.fetch_channel('1083587191336341654')
+        await get_log_channel.send(voice_message_on_join)
 
 bot.run(token)

@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
 from discord.ext import commands
+from logging.logger import logger
 import discord
 import datetime
 import aiohttp
@@ -83,11 +84,21 @@ async def test(ctx):
 # event that checks when someone has joined a voice channel
 @bot.event
 async def on_voice_state_update(member, before, after):
+    channel_id = os.getenv('BOT_LOGS_CHANNEL_ID')
+    full_username_with_discriminator = f'{member.name}#{member.discriminator}'
     current_date_utc = datetime.datetime.now()
-    voice_message_on_join = f'{member} joined voice channel {after.channel} at {str(current_date_utc)}'
-    
-    if before.channel is None and after.channel is not None:
-        get_log_channel = await bot.fetch_channel('1083587191336341654')
-        await get_log_channel.send(voice_message_on_join)
+    bot_log_channel_name = await bot.fetch_channel(channel_id)
+    voice_log_dict = {
+        "username": f'`{full_username_with_discriminator}`',
+        "voice channel joined": f'`{bot_log_channel_name}`',
+        "timestamp": str(current_date_utc)
+    }
 
-bot.run(token)
+    if before.channel is None and after.channel is not None:
+        await bot_log_channel_name.send(voice_log_dict)
+        logger.INFO(f'{full_username_with_discriminator} has joined {bot_log_channel_name} at {current_date_utc}')
+    else:
+        logger.ERROR(f'could not log {full_username_with_discriminator} to the bot-logs channel. Please investigate')
+        # logging.exception("Exception occured", exc_info=True) # <- exc_info=True allows us to view the stack trace
+
+bot.run(token, log_handler=None)

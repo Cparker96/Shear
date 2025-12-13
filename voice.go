@@ -6,7 +6,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func VoiceStateUpdate(s *discordgo.Session, vs *discordgo.VoiceStateUpdate) {
+func VoiceState(s *discordgo.Session, vs *discordgo.VoiceStateUpdate) {
 	// Skip initial state
 	if vs.BeforeUpdate == nil {
 		return

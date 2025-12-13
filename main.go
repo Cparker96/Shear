@@ -32,11 +32,13 @@ func main() {
 	dg.Identify.Intents = discordgo.IntentsGuilds |
 		discordgo.IntentsGuildMessages |
 		discordgo.IntentsMessageContent |
-		discordgo.IntentsGuildVoiceStates
+		discordgo.IntentsGuildVoiceStates |
+		discordgo.IntentsGuildMessageReactions
 
 	dg.AddHandler(ready)
-	dg.AddHandler(VoiceStateUpdate)
+	dg.AddHandler(VoiceState)
 	dg.AddHandler(MessageCreate)
+	dg.AddHandler(MessageReaction)
 
 	err = dg.Open()
 	if err != nil {

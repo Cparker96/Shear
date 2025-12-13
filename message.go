@@ -7,8 +7,25 @@ import (
 )
 
 func MessageCreate(s *discordgo.Session, message *discordgo.MessageCreate) {
+	channel, err := s.Channel(message.ChannelID)
+	if err != nil {
+		logger.Error("Error getting channel", "Error", err)
+		return
+	}
+
+	// only track regular text channels
+	if channel.Type != discordgo.ChannelTypeGuildText {
+		logger.Debug("Ignoring non-text channel", "Type", channel.Type)
+		return
+	}
+
 	// filter out bot messages
 	if message.Author.Bot {
+		return
+	}
+
+	// filter out webhook messages (followed channels, integrations)
+	if message.WebhookID != "" {
 		return
 	}
 

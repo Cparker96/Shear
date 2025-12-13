@@ -8,9 +8,10 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type ActivityData struct {
+type UserEvent struct {
 	Username   string `json:"username"`
 	UpdateType string `json:"update_type"`
+	Date       string `json:"date"`
 }
 
 func PostgresConn(postgresPW string, logger *slog.Logger) (*pgxpool.Pool, context.Context, error) {
@@ -24,22 +25,70 @@ func PostgresConn(postgresPW string, logger *slog.Logger) (*pgxpool.Pool, contex
 	return pool, ctx, nil
 }
 
-func FindData(pool *pgxpool.Pool, ctx context.Context, logger *slog.Logger) (ActivityData, error) {
-	query := fmt.Sprintf("SELECT * FROM public.activity")
-	rows, err := pool.Query(ctx, query)
+func WriteToPostgres(pool *pgxpool.Pool, ctx context.Context, action string, date string, user string, logger *slog.Logger) error {
+	checkForUser, err := DoesUserExist(pool, ctx, user)
 	if err != nil {
-		logger.Error("Error executing query", "Error", err)
+		logger.Error("Failed to retrieve query results", "Error", err)
+		return err
+	}
+
+	if checkForUser.Username == user {
+		query := `
+			UPDATE public.activity
+			SET update_type = $1, date = $2
+			WHERE username = $3
+		`
+		// update existing record
+		UpsertUserActivity(pool, ctx, query, action, date, user)
+	} else {
+		query := `
+			INSERT INTO public.activity
+			VALUES ($3, $1, $2)
+		`
+		// insert new record
+		UpsertUserActivity(pool, ctx, query, action, date, user)
+	}
+
+	return nil
+}
+
+func DoesUserExist(pool *pgxpool.Pool, ctx context.Context, user string) (UserEvent, error) {
+	query := `
+        SELECT username, update_type, date 
+        FROM public.activity
+        WHERE username = $1
+		LIMIT 1
+    `
+
+	rows, err := pool.Query(ctx, query, user)
+	if err != nil {
+		logger.Error("Error executing SELECT query", "error", err)
+		return UserEvent{}, err
 	}
 	defer rows.Close()
 
-	data := ActivityData{}
+	event := UserEvent{}
 	if rows.Next() {
-		err := rows.Scan(&data.Username, &data.UpdateType)
+		err := rows.Scan(&event.Username, &event.UpdateType, &event.Date)
 		if err != nil {
-			logger.Error("Failed to find data", "Error", err)
+			logger.Error("Failed to retrieve user event", "Username", user)
+			return UserEvent{}, err
 		}
-		return data, nil
+		return event, nil
 	}
 
-	return data, nil
+	return event, nil
+}
+
+func UpsertUserActivity(pool *pgxpool.Pool, ctx context.Context, query string, action string, date string, user string) {
+	commandTag, err := pool.Exec(ctx, query, action, date, user)
+	if err != nil {
+		logger.Error("Error executing query", "error", err)
+	}
+
+	if commandTag.RowsAffected() == 0 {
+		logger.Warn("No rows updated", "userID", user)
+	}
+
+	logger.Info("User activity updated", "Username", user, "Action", action, "rowsAffected", commandTag.RowsAffected())
 }

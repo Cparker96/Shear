@@ -33,7 +33,7 @@ func VoiceStateUpdate(s *discordgo.Session, vs *discordgo.VoiceStateUpdate) {
 		updatedTime := time.Now().Format("2006-01-02")
 		logger.Info("User joined a voice channel", "User", member.User.Username, "Channel", channelName, "Time", updatedTime)
 
-		go WriteToPostgres(conn, ctx, "voice", updatedTime, member.User.Username, logger)
+		go WriteToPostgres(conn, ctx, "voice", updatedTime, member.User.Username)
 	}
 }
 

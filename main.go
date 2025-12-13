@@ -21,13 +21,8 @@ var (
 func main() {
 	logger = slog.New(slog.NewJSONHandler(os.Stdout, nil))
 
-	_, pw, _ := GetEnvValues(logger)
-	conn, ctx, _ = PostgresConn(pw, logger)
-
-	token := os.Getenv("BOT_TOKEN")
-	if token == "" {
-		logger.Error("BOT_TOKEN environment variable not set")
-	}
+	token, pw, err := GetEnvValues()
+	conn, ctx, _ = PostgresConn(pw)
 
 	dg, err := discordgo.New("Bot " + token)
 	if err != nil {
@@ -41,6 +36,7 @@ func main() {
 
 	dg.AddHandler(ready)
 	dg.AddHandler(VoiceStateUpdate)
+	dg.AddHandler(MessageCreate)
 
 	err = dg.Open()
 	if err != nil {

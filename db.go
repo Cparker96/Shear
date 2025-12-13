@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log/slog"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -14,7 +13,7 @@ type UserEvent struct {
 	Date       string `json:"date"`
 }
 
-func PostgresConn(postgresPW string, logger *slog.Logger) (*pgxpool.Pool, context.Context, error) {
+func PostgresConn(postgresPW string) (*pgxpool.Pool, context.Context, error) {
 	dsn := fmt.Sprintf("postgresql://shear_user:%s@localhost:5432/shear", postgresPW)
 	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, dsn)
@@ -25,7 +24,7 @@ func PostgresConn(postgresPW string, logger *slog.Logger) (*pgxpool.Pool, contex
 	return pool, ctx, nil
 }
 
-func WriteToPostgres(pool *pgxpool.Pool, ctx context.Context, action string, date string, user string, logger *slog.Logger) error {
+func WriteToPostgres(pool *pgxpool.Pool, ctx context.Context, action string, date string, user string) error {
 	checkForUser, err := DoesUserExist(pool, ctx, user)
 	if err != nil {
 		logger.Error("Failed to retrieve query results", "Error", err)

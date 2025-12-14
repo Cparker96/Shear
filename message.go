@@ -34,3 +34,18 @@ func MessageCreate(s *discordgo.Session, message *discordgo.MessageCreate) {
 
 	go WriteToPostgres(conn, ctx, "message", updatedTime, message.Author.Username)
 }
+
+// func MessageCreateFromCommand(s *discordgo.Session, message *discordgo.MessageCreate) {
+// 	// ignore all messages created by the bot itself
+// 	if message.Author.ID == s.State.User.ID {
+// 		return
+// 	}
+
+// 	fullCommand := CommandPrefix + " show-activity"
+// 	if message.Content == fullCommand {
+// 		logger.Info("Executing message command", "command", fullCommand, "user", message.Author.Username)
+
+// 		executeShowActivityMessage(s, message.Message)
+// 		return
+// 	}
+// }

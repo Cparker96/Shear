@@ -83,6 +83,7 @@ func UpsertUserActivity(pool *pgxpool.Pool, ctx context.Context, query string, a
 	commandTag, err := pool.Exec(ctx, query, action, date, user)
 	if err != nil {
 		logger.Error("Error executing query", "error", err)
+		return
 	}
 
 	if commandTag.RowsAffected() == 0 {

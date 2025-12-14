@@ -16,6 +16,7 @@ var (
 	conn   *pgxpool.Pool
 	ctx    context.Context
 	logger *slog.Logger
+	// CommandPrefix = "!shear"
 )
 
 func main() {
@@ -39,6 +40,7 @@ func main() {
 	dg.AddHandler(VoiceState)
 	dg.AddHandler(MessageCreate)
 	dg.AddHandler(MessageReaction)
+	// dg.AddHandler(MessageCreateFromCommand)
 
 	err = dg.Open()
 	if err != nil {
@@ -67,3 +69,17 @@ func ready(s *discordgo.Session, event *discordgo.Ready) {
 	}
 	fmt.Println()
 }
+
+// func registerCommands(s *discordgo.Session, commands []*discordgo.ApplicationCommand) {
+// 	appID := s.State.User.ID
+// 	guildID := "1067993028918267985"
+
+// 	logger.Info("Registering commands...")
+// 	for _, v := range commands {
+// 		_, err := s.ApplicationCommandCreate(appID, guildID, v)
+// 		if err != nil {
+// 			logger.Error("Cannot create command %s: %v", v.Name, "Error", err)
+// 		}
+// 		logger.Info("Successfully registered command: /%s", v.Name)
+// 	}
+// }

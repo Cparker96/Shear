@@ -53,7 +53,7 @@ func WriteToPostgres(pool *pgxpool.Pool, ctx context.Context, action string, dat
 
 func DoesUserExist(pool *pgxpool.Pool, ctx context.Context, user string) (UserEvent, error) {
 	query := `
-        SELECT username, update_type, date 
+        SELECT username, update_type, date
         FROM public.activity
         WHERE username = $1
 		LIMIT 1

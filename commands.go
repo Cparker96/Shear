@@ -1,68 +1,100 @@
 package main
 
-// import (
-// 	"context"
-// 	"fmt"
-// 	"log"
-// 	"time"
+import (
+	"bytes"
+	"context"
+	"encoding/csv"
+	"fmt"
+	"time"
 
-// 	"github.com/bwmarrin/discordgo"
-// )
+	"github.com/bwmarrin/discordgo"
+)
 
-// func executeShowActivityMessage(s *discordgo.Session, m *discordgo.Message) {
-// 	ctx := context.Background()
-// 	pool := conn
+func executeShowActivityMessage(s *discordgo.Session, message *discordgo.Message) {
+	ctx := context.Background()
+	pool := conn
 
-// 	query := "SELECT * FROM public.activity"
-// 	rows, err := pool.Query(ctx, query)
-// 	if err != nil {
-// 		logger.Error("Failed to query for recent activity", "Error", err)
-// 		return
-// 	}
-// 	defer rows.Close()
+	// send initial status message
+	thinkingMsg, err := s.ChannelMessageSend(message.ChannelID, "Fetching activity and preparing CSV file...")
+	if err != nil {
+		logger.Error("Failed to send thinking message", "error", err)
+		return
+	}
 
-// 	var responseText string
-// 	var count int
+	query := "SELECT * FROM public.activity"
+	rows, err := pool.Query(ctx, query)
+	if err != nil {
+		logger.Error("Failed to query for recent activity", "Error", err)
+		s.ChannelMessageEdit(message.ChannelID, thinkingMsg.ID, "Database Error! Could not execute query")
+		return
+	}
+	defer rows.Close()
 
-// 	responseText += "**Activity Log:**\n"
-// 	responseText += "```\n"
-// 	responseText += fmt.Sprintf("%-5s | %-20s | %s\n", "Username", "Update_Type", "Date")
-// 	responseText += "--------------------------------------------------------\n"
+	var bytes bytes.Buffer
+	writer := csv.NewWriter(&bytes)
 
-// 	for rows.Next() {
-// 		var user string
-// 		var updateType string
-// 		var date string
+	columns := rows.FieldDescriptions()
+	headers := make([]string, len(columns))
+	for index, fd := range columns {
+		headers[index] = string(fd.Name)
+	}
 
-// 		if err := rows.Scan(&user, &updateType, &date); err != nil {
-// 			logger.Error("Error scanning row", "error", err)
-// 			continue
-// 		}
+	if err := writer.Write(headers); err != nil {
+		logger.Error("Error writing CSV header", "Error", err)
+		s.ChannelMessageEdit(message.ChannelID, thinkingMsg.ID, "Internal Error during file preparation (Header).")
+		return
+	}
 
-// 		parsedTime, err := time.Parse("2006-01-02", date)
-// 		displayDate := date
+	count := 0
+	for rows.Next() {
+		values, err := rows.Values()
+		if err != nil {
+			logger.Error("Error getting row values", "error", err)
+			continue
+		}
 
-// 		if err == nil {
-// 			displayDate = parsedTime.Format("Jan 02, 2006")
-// 		} else {
-// 			logger.Warn("Could not parse date string", "Date", date, "Error", err)
-// 		}
+		// convert all values to strings for CSV writing
+		record := make([]string, len(values))
+		for index, value := range values {
+			if time, ok := value.(time.Time); ok {
+				record[index] = time.Format("2006-01-02")
+			} else if value != nil {
+				record[index] = fmt.Sprintf("%v", value)
+			} else {
+				record[index] = "" // handle nulls
+			}
+		}
 
-// 		responseText += fmt.Sprintf("%-10s | %-20s | %s\n", user, updateType, displayDate)
-// 	}
-// 	responseText += "```"
+		if err := writer.Write(record); err != nil {
+			logger.Error("Error writing CSV record", "Error", err)
+			continue
+		}
+		count++
+	}
 
-// 	if count == 0 {
-// 		responseText = "Query successful, but no activities found in the table"
-// 	}
+	writer.Flush()
+	if err := writer.Error(); err != nil {
+		logger.Error("Error flushing CSV writer", "Error", err)
+		s.ChannelMessageEdit(message.ChannelID, thinkingMsg.ID, "Internal Error during file finalization.")
+		return
+	}
 
-// 	// Check for any error that occurred during row iteration
-// 	if rows.Err() != nil {
-// 		log.Printf("Error after iterating rows: %v", rows.Err())
-// 		responseText = "Warning: Data retrieval error detected after some rows were read."
-// 	}
-// }
+	// upload message to discord
+	if count == 0 {
+		s.ChannelMessageEdit(message.ChannelID, thinkingMsg.ID, "Query successful, but no activities found in the table.")
+		return
+	}
 
-// func strPtr(s string) *string {
-// 	return &s
-// }
+	fileName := fmt.Sprintf("activity_log_%s.csv", time.Now().Format("20060102_150405"))
+
+	// use ChannelFileSend to upload the buffer contents
+	_, err = s.ChannelFileSend(message.ChannelID, fileName, &bytes)
+	if err != nil {
+		logger.Error("Failed to send CSV file to Discord", "error", err)
+		s.ChannelMessageEdit(message.ChannelID, thinkingMsg.ID, fmt.Sprintf("File upload failed after generating %d rows.", count))
+		return
+	}
+
+	// final success message (delete the thinking message, or edit it)
+	s.ChannelMessageEdit(message.ChannelID, thinkingMsg.ID, fmt.Sprintf("Attached CSV file containing **%d** activity records.", count))
+}

@@ -6,15 +6,17 @@ import (
 	"github.com/joho/godotenv"
 )
 
-func GetEnvValues() (string, string, error) {
+func GetEnvValues() (string, string, string, string, error) {
 	err := godotenv.Load(".env")
 	if err != nil {
 		logger.Error("Error loading .env file", "Error", err)
-		return "", "", err
+		return "", "", "", "", err
 	}
 
 	token := os.Getenv("BOT_TOKEN")
 	postgresPW := os.Getenv("POSTGRES_PW")
+	postgresUser := os.Getenv("POSTGRES_USER")
+	postgresDBName := os.Getenv("POSTGRES_DBNAME")
 
-	return token, postgresPW, nil
+	return token, postgresPW, postgresUser, postgresDBName, nil
 }

@@ -21,8 +21,8 @@ var (
 
 func main() {
 	logger = slog.New(slog.NewJSONHandler(os.Stdout, nil))
-	token, pw, err := GetEnvValues()
-	conn, ctx, _ = PostgresConn(pw)
+	token, postgresPW, postgresUser, postgresDBName, err := GetEnvValues()
+	conn, ctx, _ = PostgresConn(postgresUser, postgresPW, postgresDBName)
 
 	dg, err := discordgo.New("Bot " + token)
 	if err != nil {

@@ -13,8 +13,8 @@ type UserEvent struct {
 	Date       string `json:"date"`
 }
 
-func PostgresConn(postgresPW string) (*pgxpool.Pool, context.Context, error) {
-	dsn := fmt.Sprintf("postgresql://shear_user:%s@localhost:5432/shear", postgresPW)
+func PostgresConn(postgresUser string, postgresPW string, postgresDBName string) (*pgxpool.Pool, context.Context, error) {
+	dsn := fmt.Sprintf("postgresql://%s:%s@localhost:5432/%s", postgresUser, postgresPW, postgresDBName)
 	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, dsn)
 	if err != nil {

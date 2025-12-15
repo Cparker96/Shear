@@ -33,13 +33,14 @@ func main() {
 		discordgo.IntentsGuildMessages |
 		discordgo.IntentsMessageContent |
 		discordgo.IntentsGuildVoiceStates |
-		discordgo.IntentsGuildMessageReactions
+		discordgo.IntentsGuildMessageReactions |
+		discordgo.IntentGuildMembers
 
 	dg.AddHandler(ready)
 	dg.AddHandler(VoiceState)
 	dg.AddHandler(MessageCreate)
 	dg.AddHandler(MessageReaction)
-	dg.AddHandler(MessageCreateFromCommand)
+	dg.AddHandler(CommandRouter)
 
 	err = dg.Open()
 	if err != nil {
@@ -67,4 +68,9 @@ func ready(s *discordgo.Session, event *discordgo.Ready) {
 		fmt.Printf("  → %s\n", g.Name)
 	}
 	fmt.Println()
+}
+
+func CommandRouter(s *discordgo.Session, message *discordgo.MessageCreate) {
+	HandleShearCommand(s, message, "get-activity", executeGetUserActivity)
+	HandleShearCommand(s, message, "remove-user", executeRemoveUser)
 }

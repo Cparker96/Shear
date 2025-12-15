@@ -1,4 +1,4 @@
-package main
+package command
 
 import (
 	"bytes"
@@ -10,7 +10,9 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func executeShowActivityMessage(s *discordgo.Session, message *discordgo.Message) {
+type CommandHandler func(s *discordgo.Session, message *discordgo.Message, arg string)
+
+func executeGetUserActivity(s *discordgo.Session, message *discordgo.Message, arg string) {
 	ctx := context.Background()
 	pool := conn
 
@@ -97,4 +99,39 @@ func executeShowActivityMessage(s *discordgo.Session, message *discordgo.Message
 
 	// final success message (delete the thinking message, or edit it)
 	s.ChannelMessageEdit(message.ChannelID, thinkingMsg.ID, fmt.Sprintf("Attached CSV file containing **%d** activity records.", count))
+}
+
+func executeRemoveUser(s *discordgo.Session, message *discordgo.Message, arg string) {
+	username := arg
+	ctx := context.Background()
+	pool := conn
+
+	query := fmt.Sprintf("DELETE FROM public.activity where username = '%s'", username)
+
+	commandTag, err := pool.Exec(ctx, query)
+	if err != nil {
+		logger.Error("Error executing query", "error", err)
+		return
+	}
+
+	if commandTag.RowsAffected() == 0 {
+		logger.Warn("No rows updated", "userID", username)
+	}
+
+	logger.Info("User activity updated", "Username", username, "Action", "RemovedUser", "rowsAffected", commandTag.RowsAffected())
+
+	memberID, err := findMemberIDByUsername(s, message.GuildID, username)
+	if err != nil {
+		logger.Warn("Failed to find member ID for kick attempt", "Username", username, "Error", err)
+		return
+	}
+
+	kickErr := s.GuildMemberDelete(message.GuildID, memberID)
+	if kickErr != nil {
+		logger.Error("Failed to kick user from Discord", "UserID", memberID, "Username", username, "Error", kickErr)
+		return
+	}
+
+	s.ChannelMessageSend(message.ChannelID, "Successfully removed user from DB and kicked from Discord")
+	logger.Info("Successfully removed user from DB and kicked from Discord", "Username", username, "Invoker", message.Author.Username)
 }

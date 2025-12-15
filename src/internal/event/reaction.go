@@ -1,5 +1,4 @@
-// reaction.go - Reaction tracking logic
-package main
+package event
 
 import (
 	"time"

@@ -22,26 +22,9 @@ func VoiceState(s *discordgo.Session, vs *discordgo.VoiceStateUpdate) {
 			return
 		}
 
-		// Get guild info
-		guild, err := s.Guild(vs.GuildID)
-		if err != nil {
-			logger.Error("Error getting guild", "Error", err)
-			return
-		}
-
-		channelName := getChannelName(guild, vs.ChannelID)
 		updatedTime := time.Now().Format("2006-01-02")
-		logger.Info("User joined a voice channel", "User", member.User.Username, "Channel", channelName, "Time", updatedTime)
+		logger.Info("User joined a voice channel", "User", member.User.Username, "Time", updatedTime)
 
 		go WriteToPostgres(conn, ctx, "voice", updatedTime, member.User.Username)
 	}
-}
-
-func getChannelName(guild *discordgo.Guild, channelID string) string {
-	for _, channel := range guild.Channels {
-		if channel.ID == channelID {
-			return channel.Name
-		}
-	}
-	return "Unknown channel name"
 }

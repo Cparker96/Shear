@@ -1,0 +1,9 @@
+services:
+  shear:
+    image: shear:latest
+    command: ./shear
+    logging:
+      driver: local
+      options:
+        max-file: "5"
+        max-size: "10m"

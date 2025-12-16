@@ -1,0 +1,74 @@
+groups:
+  - name: system_alerts
+    interval: 30s
+    rules:
+      - alert: LowDiskSpace
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100 < 15
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low disk space on root volume"
+          description: "Root volume has less than 15% space remaining (current: {{ $value }}%)"
+
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is above 85% (current: {{ $value }}%)"
+
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 75
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage is above 75% (current: {{ $value }}%)"
+
+  - name: container_alerts
+    interval: 30s
+    rules:
+      - alert: ShearContainerHighMemory
+        expr: (container_memory_usage_bytes{name="shear"} / container_spec_memory_limit_bytes{name="shear"}) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          container: shear
+        annotations:
+          summary: "High memory usage in Shear container"
+          description: "Shear container memory usage is above 85% (current: {{ $value }}%)"
+
+      - alert: ShearContainerHighCPU
+        expr: rate(container_cpu_usage_seconds_total{name="shear"}[5m]) * 100 > 75
+        for: 5m
+        labels:
+          severity: warning
+          container: shear
+        annotations:
+          summary: "High CPU usage in Shear container"
+          description: "Shear container CPU usage is above 75% (current: {{ $value }}%)"
+
+      - alert: PostgresContainerHighMemory
+        expr: (container_memory_usage_bytes{name="postgres"} / container_spec_memory_limit_bytes{name="postgres"}) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          container: postgres
+        annotations:
+          summary: "High memory usage in Postgres container"
+          description: "Postgres container memory usage is above 85% (current: {{ $value }}%)"
+
+      - alert: PostgresContainerHighCPU
+        expr: rate(container_cpu_usage_seconds_total{name="postgres"}[5m]) * 100 > 75
+        for: 5m
+        labels:
+          severity: warning
+          container: postgres
+        annotations:
+          summary: "High CPU usage in Postgres container"
+          description: "Postgres container CPU usage is above 75% (current: {{ $value }}%)"
+

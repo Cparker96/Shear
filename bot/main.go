@@ -28,12 +28,12 @@ var (
 
 func main() {
 	logger = slog.New(slog.NewJSONHandler(os.Stdout, nil))
-	token, postgresPW, postgresUser, postgresDBName, channelID, roleName, err := config.GetEnvValues(logger)
+	token, postgresPW, postgresUser, postgresDBName, channelID, roleName, postgresHost, err := config.GetEnvValues(logger)
 	if err != nil {
 		logger.Error("Failed to load environment variables", "error", err)
 		return
 	}
-	conn, ctx, _ = database.PostgresConn(postgresUser, postgresPW, postgresDBName, logger)
+	conn, ctx, _ = database.PostgresConn(postgresUser, postgresPW, postgresDBName, postgresHost, logger)
 
 	dg, err := discordgo.New("Bot " + token)
 	if err != nil {

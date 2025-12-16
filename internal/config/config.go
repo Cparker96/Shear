@@ -7,11 +7,11 @@ import (
 	"github.com/joho/godotenv"
 )
 
-func GetEnvValues(logger *slog.Logger) (string, string, string, string, string, string, error) {
+func GetEnvValues(logger *slog.Logger) (string, string, string, string, string, string, string, error) {
 	err := godotenv.Load()
 	if err != nil {
 		logger.Error("Error loading .env file", "Error", err)
-		return "", "", "", "", "", "", err
+		return "", "", "", "", "", "", "", err
 	}
 
 	token := os.Getenv("BOT_TOKEN")
@@ -20,6 +20,10 @@ func GetEnvValues(logger *slog.Logger) (string, string, string, string, string, 
 	postgresDBName := os.Getenv("POSTGRES_DBNAME")
 	channelID := os.Getenv("DISCORD_CHANNEL_ID")
 	roleName := os.Getenv("DISCORD_ROLE_NAME")
+	postgresHost := os.Getenv("POSTGRES_HOST")
+	if postgresHost == "" {
+		postgresHost = "localhost" // Default to localhost for local development
+	}
 
-	return token, postgresPW, postgresUser, postgresDBName, channelID, roleName, nil
+	return token, postgresPW, postgresUser, postgresDBName, channelID, roleName, postgresHost, nil
 }

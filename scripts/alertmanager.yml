@@ -1,0 +1,42 @@
+global:
+  resolve_timeout: 5m
+  smtp_smarthost: 'smtp.gmail.com:587'
+  smtp_from: '${ALERT_EMAIL}'
+  smtp_auth_username: '${ALERT_EMAIL}'
+  smtp_auth_password: '${SMTP_PASSWORD}'
+  smtp_require_tls: true
+
+route:
+  group_by: ['alertname']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 12h
+  receiver: 'email-receiver'
+
+receivers:
+  - name: 'email-receiver'
+    email_configs:
+      - to: '${ALERT_EMAIL}'
+        headers:
+          Subject: '{{ .GroupLabels.alertname }} - {{ .Status | toUpper }}'
+        html: |
+          <h2>Alert: {{ .GroupLabels.alertname }}</h2>
+          <p><strong>Status:</strong> {{ .Status | toUpper }}</p>
+          <p><strong>Summary:</strong> {{ .CommonAnnotations.summary }}</p>
+          <p><strong>Description:</strong> {{ .CommonAnnotations.description }}</p>
+          <hr>
+          <h3>Alert Details:</h3>
+          <ul>
+          {{ range .Alerts }}
+            <li>
+              <strong>Alert:</strong> {{ .Labels.alertname }}<br>
+              <strong>Severity:</strong> {{ .Labels.severity }}<br>
+              <strong>Instance:</strong> {{ .Labels.instance }}<br>
+              <strong>Started:</strong> {{ .StartsAt.Format "2006-01-02 15:04:05" }}<br>
+              {{ if .EndsAt }}
+              <strong>Ended:</strong> {{ .EndsAt.Format "2006-01-02 15:04:05" }}<br>
+              {{ end }}
+            </li>
+          {{ end }}
+          </ul>
+

@@ -1,2 +1,24 @@
 .env
 *.exe
+
+# Local .terraform directories
+.terraform/
+
+# .tfstate and plan files
+*.tfstate
+*.tfstate.*
+*.tfplan
+
+
+# Crash log files
+crash.log
+crash.*.log
+
+*.tfvars
+*.tfvars.json
+*.hcl
+
+
+# Ignore CLI configuration files
+.terraformrc
+terraform.rc

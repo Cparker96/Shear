@@ -9,6 +9,13 @@
 - Database seeding function to seed the database with every user in a discord server on init
 - New `DetectUserJoin` and `DetectUserLeave` events to detect when a user joins or leaves the server entirely and removes them from the Postgres table
     - Ensures a "best effort" to keep a 1 to 1 with discord user count and DB table congruency
+- Terraform project under `/terraform`
+    - Includes a DigitalOcean droplet (server) and associated SSH key
+    - Backups run nightly at 4am
+- Init scripts for installing and configuring Prometheus and Alertmanager for observability
+    - Utilizes node_exporter for server level metrics and cAdvisor for container level metrics
+    - Routes all alerts to a particular email address
+- Init script (init-db.sql) that builds the Postgres table and schema
 
 <h3>Updated</h3>
 

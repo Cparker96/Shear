@@ -1,7 +1,9 @@
 services:
   shear:
     image: shear:latest
-    command: ./shear
+    env_file: .env
+    command: /app/shear
+    restart: unless-stopped
     logging:
       driver: local
       options:

@@ -63,4 +63,6 @@ To deploy your bot:
 <h2>Available Commands</h2>
 
 - `!shear get-activity`
-    - This will pull all of the records in the main postgres table and output all results to a .csv file in a separate message. You can download and open this file with Excel, Google Sheets, etc.
+    - Pulls all records in the main postgres table and output all results to a .csv file in a separate message. You can download and open this file with Excel, Google Sheets, etc.
+= `!shear remove-user <username>`
+    - Removes a user from a discord server with a parameter of 'username'

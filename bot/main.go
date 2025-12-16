@@ -9,6 +9,10 @@ import (
 	"syscall"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/codyw/shear/internal/command"
+	"github.com/codyw/shear/internal/config"
+	"github.com/codyw/shear/internal/database"
+	"github.com/codyw/shear/internal/event"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -21,8 +25,8 @@ var (
 
 func main() {
 	logger = slog.New(slog.NewJSONHandler(os.Stdout, nil))
-	token, postgresPW, postgresUser, postgresDBName, err := GetEnvValues()
-	conn, ctx, _ = PostgresConn(postgresUser, postgresPW, postgresDBName)
+	token, postgresPW, postgresUser, postgresDBName, err := config.GetEnvValues(logger)
+	conn, ctx, _ = database.PostgresConn(postgresUser, postgresPW, postgresDBName, logger)
 
 	dg, err := discordgo.New("Bot " + token)
 	if err != nil {
@@ -37,10 +41,22 @@ func main() {
 		discordgo.IntentGuildMembers
 
 	dg.AddHandler(ready)
-	dg.AddHandler(VoiceState)
-	dg.AddHandler(MessageCreate)
-	dg.AddHandler(MessageReaction)
-	dg.AddHandler(CommandRouter)
+
+	dg.AddHandler(func(s *discordgo.Session, vs *discordgo.VoiceStateUpdate) {
+		event.VoiceState(s, vs, conn, logger)
+	})
+
+	dg.AddHandler(func(s *discordgo.Session, m *discordgo.MessageCreate) {
+		event.MessageCreate(s, m, conn, logger)
+	})
+
+	dg.AddHandler(func(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
+		event.MessageReaction(s, r, conn, logger)
+	})
+
+	dg.AddHandler(func(s *discordgo.Session, m *discordgo.MessageCreate) {
+		CommandRouter(s, m, conn, logger)
+	})
 
 	err = dg.Open()
 	if err != nil {
@@ -70,7 +86,7 @@ func ready(s *discordgo.Session, event *discordgo.Ready) {
 	fmt.Println()
 }
 
-func CommandRouter(s *discordgo.Session, message *discordgo.MessageCreate) {
-	HandleShearCommand(s, message, "get-activity", executeGetUserActivity)
-	HandleShearCommand(s, message, "remove-user", executeRemoveUser)
+func CommandRouter(s *discordgo.Session, message *discordgo.MessageCreate, conn *pgxpool.Pool, logger *slog.Logger) {
+	event.HandleShearCommand(s, message, conn, CommandPrefix, "get-activity", command.ExecuteGetUserActivity, logger)
+	event.HandleShearCommand(s, message, conn, CommandPrefix, "remove-user", command.ExecuteRemoveUser, logger)
 }

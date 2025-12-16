@@ -1,12 +1,17 @@
 package event
 
 import (
+	"context"
+	"log/slog"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/codyw/shear/internal/database"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func VoiceState(s *discordgo.Session, vs *discordgo.VoiceStateUpdate) {
+func VoiceState(s *discordgo.Session, vs *discordgo.VoiceStateUpdate, conn *pgxpool.Pool, logger *slog.Logger) {
+	ctx := context.Background()
 	// Skip initial state
 	if vs.BeforeUpdate == nil {
 		return
@@ -25,6 +30,6 @@ func VoiceState(s *discordgo.Session, vs *discordgo.VoiceStateUpdate) {
 		updatedTime := time.Now().Format("2006-01-02")
 		logger.Info("User joined a voice channel", "User", member.User.Username, "Time", updatedTime)
 
-		go WriteToPostgres(conn, ctx, "voice", updatedTime, member.User.Username)
+		go database.WriteToPostgres(conn, ctx, "voice", updatedTime, member.User.Username, logger)
 	}
 }

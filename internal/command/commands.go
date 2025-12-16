@@ -5,14 +5,15 @@ import (
 	"context"
 	"encoding/csv"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/codyw/shear/internal/event"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type CommandHandler func(s *discordgo.Session, message *discordgo.Message, arg string)
-
-func executeGetUserActivity(s *discordgo.Session, message *discordgo.Message, arg string) {
+func ExecuteGetUserActivity(s *discordgo.Session, message *discordgo.Message, conn *pgxpool.Pool, arg string, logger *slog.Logger) {
 	ctx := context.Background()
 	pool := conn
 
@@ -101,7 +102,7 @@ func executeGetUserActivity(s *discordgo.Session, message *discordgo.Message, ar
 	s.ChannelMessageEdit(message.ChannelID, thinkingMsg.ID, fmt.Sprintf("Attached CSV file containing **%d** activity records.", count))
 }
 
-func executeRemoveUser(s *discordgo.Session, message *discordgo.Message, arg string) {
+func ExecuteRemoveUser(s *discordgo.Session, message *discordgo.Message, conn *pgxpool.Pool, arg string, logger *slog.Logger) {
 	username := arg
 	ctx := context.Background()
 	pool := conn
@@ -120,7 +121,7 @@ func executeRemoveUser(s *discordgo.Session, message *discordgo.Message, arg str
 
 	logger.Info("User activity updated", "Username", username, "Action", "RemovedUser", "rowsAffected", commandTag.RowsAffected())
 
-	memberID, err := findMemberIDByUsername(s, message.GuildID, username)
+	memberID, err := event.FindMemberIDByUsername(s, message.GuildID, username, logger)
 	if err != nil {
 		logger.Warn("Failed to find member ID for kick attempt", "Username", username, "Error", err)
 		return

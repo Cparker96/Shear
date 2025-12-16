@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -13,7 +14,7 @@ type UserEvent struct {
 	Date       string `json:"date"`
 }
 
-func PostgresConn(postgresUser string, postgresPW string, postgresDBName string) (*pgxpool.Pool, context.Context, error) {
+func PostgresConn(postgresUser string, postgresPW string, postgresDBName string, logger *slog.Logger) (*pgxpool.Pool, context.Context, error) {
 	dsn := fmt.Sprintf("postgresql://%s:%s@localhost:5432/%s", postgresUser, postgresPW, postgresDBName)
 	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, dsn)
@@ -24,8 +25,8 @@ func PostgresConn(postgresUser string, postgresPW string, postgresDBName string)
 	return pool, ctx, nil
 }
 
-func WriteToPostgres(pool *pgxpool.Pool, ctx context.Context, action string, date string, user string) error {
-	checkForUser, err := DoesUserExist(pool, ctx, user)
+func WriteToPostgres(pool *pgxpool.Pool, ctx context.Context, action string, date string, user string, logger *slog.Logger) error {
+	checkForUser, err := DoesUserExist(pool, ctx, user, logger)
 	if err != nil {
 		logger.Error("Failed to retrieve query results", "Error", err)
 		return err
@@ -38,20 +39,20 @@ func WriteToPostgres(pool *pgxpool.Pool, ctx context.Context, action string, dat
 			WHERE username = $3
 		`
 		// update existing record
-		UpsertUserActivity(pool, ctx, query, action, date, user)
+		UpsertUserActivity(pool, ctx, query, action, date, user, logger)
 	} else {
 		query := `
 			INSERT INTO public.activity
 			VALUES ($3, $1, $2)
 		`
 		// insert new record
-		UpsertUserActivity(pool, ctx, query, action, date, user)
+		UpsertUserActivity(pool, ctx, query, action, date, user, logger)
 	}
 
 	return nil
 }
 
-func DoesUserExist(pool *pgxpool.Pool, ctx context.Context, user string) (UserEvent, error) {
+func DoesUserExist(pool *pgxpool.Pool, ctx context.Context, user string, logger *slog.Logger) (UserEvent, error) {
 	query := `
         SELECT username, update_type, date
         FROM public.activity
@@ -79,7 +80,7 @@ func DoesUserExist(pool *pgxpool.Pool, ctx context.Context, user string) (UserEv
 	return event, nil
 }
 
-func UpsertUserActivity(pool *pgxpool.Pool, ctx context.Context, query string, action string, date string, user string) {
+func UpsertUserActivity(pool *pgxpool.Pool, ctx context.Context, query string, action string, date string, user string, logger *slog.Logger) {
 	commandTag, err := pool.Exec(ctx, query, action, date, user)
 	if err != nil {
 		logger.Error("Error executing query", "error", err)

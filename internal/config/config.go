@@ -1,13 +1,14 @@
 package config
 
 import (
+	"log/slog"
 	"os"
 
 	"github.com/joho/godotenv"
 )
 
-func GetEnvValues() (string, string, string, string, error) {
-	err := godotenv.Load(".env")
+func GetEnvValues(logger *slog.Logger) (string, string, string, string, error) {
+	err := godotenv.Load()
 	if err != nil {
 		logger.Error("Error loading .env file", "Error", err)
 		return "", "", "", "", err

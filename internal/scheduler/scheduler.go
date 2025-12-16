@@ -13,9 +13,11 @@ import (
 )
 
 type ScheduledCronJob struct {
-	conn    *pgxpool.Pool
-	logger  *slog.Logger
-	session *discordgo.Session
+	conn      *pgxpool.Pool
+	logger    *slog.Logger
+	session   *discordgo.Session
+	channelID string
+	roleName  string
 }
 
 type InactiveUser struct {
@@ -25,11 +27,13 @@ type InactiveUser struct {
 	DaysDelta  int
 }
 
-func NewScheduledCronJob(conn *pgxpool.Pool, logger *slog.Logger, session *discordgo.Session) *ScheduledCronJob {
+func NewScheduledCronJob(conn *pgxpool.Pool, logger *slog.Logger, session *discordgo.Session, channelID string, roleName string) *ScheduledCronJob {
 	return &ScheduledCronJob{
-		conn:    conn,
-		logger:  logger,
-		session: session,
+		conn:      conn,
+		logger:    logger,
+		session:   session,
+		channelID: channelID,
+		roleName:  roleName,
 	}
 }
 
@@ -59,6 +63,12 @@ func (cron *ScheduledCronJob) GetUserActivityWithTimeRanges() {
 
 	// Loop through each record and calculate the delta
 	for _, event := range events {
+		// Skip if date is empty (NULL in database)
+		if event.Date == "" {
+			cron.logger.Warn("User has no date set, skipping inactivity check", "username", event.Username)
+			continue
+		}
+
 		// Parse the user's date string
 		userDate, err := time.Parse("2006-01-02", event.Date)
 		if err != nil {
@@ -89,35 +99,38 @@ func (cron *ScheduledCronJob) GetUserActivityWithTimeRanges() {
 		}
 	}
 
-	channelID := "1083587191336341654"
-	// Send Discord message with inactive users if any found
-	if len(inactiveUsers) > 0 && channelID != "" {
-		// Get channel to find guild ID
-		channel, err := cron.session.Channel(channelID)
-		if err != nil {
-			cron.logger.Error("Failed to get channel", "error", err)
-			return
-		}
-
-		// Find Council role by name
-		roleMention := cron.findRoleMention(channel.GuildID, "Council")
-
-		message := cron.formatInactiveUsersMessage(inactiveUsers, todayStr)
-
-		// Prepend role mention if found
-		content := message
-		if roleMention != "" {
-			content = roleMention + "\n\n" + message
-		}
-
-		_, err = cron.session.ChannelMessageSend(channelID, content)
-		if err != nil {
-			cron.logger.Error("Failed to send Discord message", "error", err)
+	// Only send Discord message if there are inactive users found
+	if len(inactiveUsers) > 0 {
+		if cron.channelID == "" {
+			cron.logger.Warn("Inactive users found but no channel ID configured", "count", len(inactiveUsers))
 		} else {
-			cron.logger.Info("Sent inactive users list to Discord", "count", len(inactiveUsers))
+			// Get channel to find guild ID
+			channel, err := cron.session.Channel(cron.channelID)
+			if err != nil {
+				cron.logger.Error("Failed to get channel", "error", err)
+				return
+			}
+
+			// Find role by name from environment variable
+			roleMention := cron.findRoleMention(channel.GuildID, cron.roleName)
+
+			message := cron.formatInactiveUsersMessage(inactiveUsers, todayStr)
+
+			// Prepend role mention if found
+			content := message
+			if roleMention != "" {
+				content = roleMention + "\n\n" + message
+			}
+
+			_, err = cron.session.ChannelMessageSend(cron.channelID, content)
+			if err != nil {
+				cron.logger.Error("Failed to send Discord message", "error", err)
+			} else {
+				cron.logger.Info("Sent inactive users list to Discord", "count", len(inactiveUsers))
+			}
 		}
-	} else if len(inactiveUsers) > 0 && channelID == "" {
-		cron.logger.Warn("Inactive users found but no channel ID configured", "count", len(inactiveUsers))
+	} else {
+		cron.logger.Info("No inactive users found exceeding 90 day threshold")
 	}
 
 	cron.logger.Info("Completed scheduled cron job for user activity time deltas", "total_records", len(events), "inactive_users", len(inactiveUsers))

@@ -22,23 +22,6 @@ To stand up your own implementation of Shear in your discord server, refer to th
     - Optional: Install a GUI like [pgAdmin](https://www.pgadmin.org/download/) to build your database and table (table name should be `activity`)
 6. Create a user in Postgres that has permissions over the DB that you create (it is recommended to not use the postgres master username/password as the authenticated user)
 7. Download Docker and Docker Compose
-    ```bash
-    # install all applicable updates and certs
-    for pkg in docker.io docker-doc docker-compose podman-docker containerd runc; do sudo apt-get remove $pkg; done
-    sudo apt install -y apt-transport-https software-properties-common ca-certificates curl gnupg lsb-release
-
-    # add Docker's GPG key
-    mkdir -p /etc/apt/keyrings
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-    sudo chmod a+r /etc/apt/keyrings/docker.gpg
-
-    # set up Docker repository
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list
-
-    # install latest version
-    sudo apt update -y
-    sudo apt-get -y install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-    ```
 
 <h2>Usage</h2>
 To deploy your bot:

@@ -16,4 +16,13 @@ echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.
 sudo apt update -y
 sudo apt-get -y install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
-systemctl status docker
+# add ubuntu user to docker group so they can execute docker commands
+sudo usermod -aG docker ubuntu
+
+# start and enable docker service
+sudo systemctl start docker
+sudo systemctl enable docker
+
+echo "Docker installation complete!"
+echo "Note: You may need to log out and log back in for the docker group changes to take effect."
+echo "You can verify by running: docker ps"

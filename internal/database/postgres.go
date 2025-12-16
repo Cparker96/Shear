@@ -42,7 +42,7 @@ func WriteToPostgres(pool *pgxpool.Pool, ctx context.Context, action string, dat
 		UpsertUserActivity(pool, ctx, query, action, date, user, logger)
 	} else {
 		query := `
-			INSERT INTO public.activity
+			INSERT INTO public.activity (username, update_type, date)
 			VALUES ($3, $1, $2)
 		`
 		// insert new record
@@ -119,4 +119,60 @@ func GetAllUserEvents(pool *pgxpool.Pool, ctx context.Context, logger *slog.Logg
 	}
 
 	return events, nil
+}
+
+func HasRecords(pool *pgxpool.Pool, ctx context.Context, logger *slog.Logger) (bool, error) {
+	query := `
+		SELECT COUNT(*) 
+		FROM public.activity
+	`
+
+	var count int
+	err := pool.QueryRow(ctx, query).Scan(&count)
+	if err != nil {
+		logger.Error("Error checking for existing records", "error", err)
+		return false, err
+	}
+
+	return count > 0, nil
+}
+
+func SeedDatabase(pool *pgxpool.Pool, ctx context.Context, usernames []string, date string, logger *slog.Logger) error {
+	if len(usernames) == 0 {
+		logger.Info("No usernames provided for seeding")
+		return nil
+	}
+
+	query := `
+		INSERT INTO public.activity (username, update_type, date)
+		VALUES ($1, 'seed', $2)
+	`
+
+	inserted := 0
+	skipped := 0
+	for _, username := range usernames {
+		// Check if user already exists before inserting
+		existingUser, err := DoesUserExist(pool, ctx, username, logger)
+		if err != nil {
+			logger.Warn("Failed to check if user exists during seeding", "username", username, "error", err)
+			continue
+		}
+
+		if existingUser.Username == username {
+			skipped++
+			continue
+		}
+
+		commandTag, err := pool.Exec(ctx, query, username, date)
+		if err != nil {
+			logger.Warn("Failed to insert username during seeding", "username", username, "error", err)
+			continue
+		}
+		if commandTag.RowsAffected() > 0 {
+			inserted++
+		}
+	}
+
+	logger.Info("Database seeding completed", "total_usernames", len(usernames), "inserted", inserted, "skipped", skipped, "seed_date", date)
+	return nil
 }

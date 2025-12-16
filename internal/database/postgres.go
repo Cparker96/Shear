@@ -93,3 +93,30 @@ func UpsertUserActivity(pool *pgxpool.Pool, ctx context.Context, query string, a
 
 	logger.Info("User activity updated", "Username", user, "Action", action, "rowsAffected", commandTag.RowsAffected())
 }
+
+func GetAllUserEvents(pool *pgxpool.Pool, ctx context.Context, logger *slog.Logger) ([]UserEvent, error) {
+	query := `
+		SELECT username, update_type, date
+		FROM public.activity
+	`
+
+	rows, err := pool.Query(ctx, query)
+	if err != nil {
+		logger.Error("Error executing SELECT query", "error", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	var events []UserEvent
+	for rows.Next() {
+		event := UserEvent{}
+		err := rows.Scan(&event.Username, &event.UpdateType, &event.Date)
+		if err != nil {
+			logger.Error("Failed to retrieve user event", "error", err)
+			continue
+		}
+		events = append(events, event)
+	}
+
+	return events, nil
+}

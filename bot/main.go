@@ -7,12 +7,14 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/codyw/shear/internal/command"
 	"github.com/codyw/shear/internal/config"
 	"github.com/codyw/shear/internal/database"
 	"github.com/codyw/shear/internal/event"
+	"github.com/codyw/shear/internal/scheduler"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -58,11 +60,39 @@ func main() {
 		CommandRouter(s, m, conn, logger)
 	})
 
+	dg.AddHandler(func(s *discordgo.Session, r *discordgo.GuildMemberAdd) {
+		event.DetectUserJoin(s, r, conn, logger)
+	})
+
+	dg.AddHandler(func(s *discordgo.Session, r *discordgo.GuildMemberRemove) {
+		event.DetectUserLeave(s, r, conn, logger)
+	})
+
 	err = dg.Open()
 	if err != nil {
 		logger.Error("Error opening connection:", err)
 	}
 	defer dg.Close()
+
+	// Initialize and start the cron job scheduler
+	cronJob := scheduler.NewScheduledCronJob(conn, logger, dg)
+
+	// Start the cron job in a goroutine that runs every 30 seconds
+	go func() {
+		ticker := time.NewTicker(30 * time.Second)
+		defer ticker.Stop()
+
+		// Run immediately on startup
+		cronJob.GetUserActivityWithTimeRanges()
+
+		// Then run every 30 seconds
+		for {
+			select {
+			case <-ticker.C:
+				cronJob.GetUserActivityWithTimeRanges()
+			}
+		}
+	}()
 
 	fmt.Println("Bot is now running. Press CTRL-C to exit.")
 

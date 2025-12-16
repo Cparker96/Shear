@@ -3,6 +3,7 @@ package event
 import (
 	"context"
 	"log/slog"
+	"strings"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -31,6 +32,11 @@ func MessageCreate(s *discordgo.Session, message *discordgo.MessageCreate, conn 
 
 	// filter out webhook messages (followed channels, integrations)
 	if message.WebhookID != "" {
+		return
+	}
+
+	// rare edge case - the person kicks themselves from the bot with the 'remove-user' command
+	if strings.Contains(message.Content, "!shear remove-user") && strings.Contains(message.Content, message.Author.Username) {
 		return
 	}
 

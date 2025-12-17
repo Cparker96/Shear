@@ -1,3 +1,10 @@
+### 12/17/2025
+
+<h3>Updated</h3>
+
+- Switched to using Slack inside of alertmanager with a webhook URL instead of an email address with SMTP
+    - slack channel should be called 'shear'
+
 ### 12/16/2025
 <h3>Added</h3>
 

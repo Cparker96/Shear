@@ -15,12 +15,6 @@ resource "digitalocean_firewall" "shear-firewall" {
 
   inbound_rule {
     protocol         = "tcp"
-    port_range       = "5432"
-    source_addresses = ["0.0.0.0/0"]
-  }
-
-  inbound_rule {
-    protocol         = "tcp"
     port_range       = "8080"
     source_addresses = ["0.0.0.0/0"]
   }

@@ -28,9 +28,12 @@ To stand up your own implementation of Shear in your discord server, refer to th
 <h2>Usage</h2>
 To deploy your bot:
 
-1. Clone this repo and create a .env file. Paste your secrets in there
+1. Build your server through `terraform init/plan/apply` in the terraform directory
+2. Clone this repo and copy the install scripts over located in the scripts directory and execute
+    - Validate that the slack webhook URL gets injected into the alertmanager.yml file in `install_prometheus.sh`
+3. Create a .env file and paste your secrets
     - Refer to the .env.example file for variable naming conventions
-2. Build the Docker image
+4. Build the Docker image
     ```bash
     docker build -t shear .
     ```
@@ -40,7 +43,7 @@ To deploy your bot:
 
         ./shear
         ```
-3. Deploy the image
+5. Deploy the image
     ```bash
     docker compose up -d
     ```

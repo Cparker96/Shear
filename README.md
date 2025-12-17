@@ -31,6 +31,7 @@ To deploy your bot:
 1. Build your server through `terraform init/plan/apply` in the terraform directory
 2. Clone this repo and copy the install scripts over located in the scripts directory and execute
     - Validate that the slack webhook URL gets injected into the alertmanager.yml file in `install_prometheus.sh`
+    - Ex: `./install_prometheus.sh 'your-webhook-URL'
 3. Create a .env file and paste your secrets
     - Refer to the .env.example file for variable naming conventions
 4. Build the Docker image

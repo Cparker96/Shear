@@ -27,3 +27,13 @@ variable "server_size" {
   type        = string
   description = "Size of the server"
 }
+
+variable "firewall_name" {
+  type        = string
+  description = "Name of the firewall"
+}
+
+variable "source_address" {
+  type        = string
+  description = "Personal public IP"
+}

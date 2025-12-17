@@ -58,7 +58,7 @@ func (cron *ScheduledCronJob) GetUserActivityWithTimeRanges() {
 		return
 	}
 
-	// List to store users that exceed 90 days
+	// List to store users that exceed 4 months
 	var inactiveUsers []InactiveUser
 
 	// Loop through each record and calculate the delta
@@ -89,7 +89,7 @@ func (cron *ScheduledCronJob) GetUserActivityWithTimeRanges() {
 		)
 
 		// Add to inactive users list if delta exceeds 90 days
-		if daysDelta > 90 {
+		if daysDelta > 120 {
 			inactiveUsers = append(inactiveUsers, InactiveUser{
 				Username:   event.Username,
 				UpdateType: event.UpdateType,
@@ -139,7 +139,7 @@ func (cron *ScheduledCronJob) GetUserActivityWithTimeRanges() {
 func (cron *ScheduledCronJob) formatInactiveUsersMessage(users []InactiveUser, today string) string {
 	var builder strings.Builder
 
-	builder.WriteString("## Users Exceeding 90 Days Inactivity\n\n")
+	builder.WriteString("## Users Exceeding 4 months of Inactivity\n\n")
 	builder.WriteString(fmt.Sprintf("**Report Date:** %s\n", today))
 	builder.WriteString(fmt.Sprintf("**Total Users:** %d\n\n", len(users)))
 	builder.WriteString(strings.Repeat("─", 40) + "\n\n")

@@ -73,22 +73,22 @@ groups:
           description: "Postgres container CPU usage is above 75% (current: {{ $value }}%)"
 
       - alert: PostgresContainerDown
-        expr: (time() - container_last_seen{name="postgres"}) > 300
+        expr: absent(container_memory_usage_bytes{name="postgres"})
         for: 5m
         labels:
           severity: critical
           container: postgres
         annotations:
           summary: "Postgres container is down"
-          description: "Postgres container has not been seen for 5+ minutes (last seen: {{ $value }}s ago)"
+          description: "Postgres container has stopped or is not responding. No metrics received for 5+ minutes."
 
       - alert: ShearContainerDown
-        expr: (time() - container_last_seen{name="shear"}) > 300
+        expr: absent(container_memory_usage_bytes{name="shear"})
         for: 5m
         labels:
           severity: critical
           container: shear
         annotations:
           summary: "Shear container is down"
-          description: "Shear container has not been seen for 5+ minutes (last seen: {{ $value }}s ago)"
+          description: "Shear container has stopped or is not responding. No metrics received for 5+ minutes."
 

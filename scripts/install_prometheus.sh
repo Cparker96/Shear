@@ -27,6 +27,7 @@ mkdir -p "$INSTALL_DIR/node_exporter"
 mkdir -p /etc/prometheus
 mkdir -p /etc/alertmanager
 mkdir -p /var/lib/prometheus
+mkdir -p /var/lib/alertmanager
 
 # Download and install Prometheus
 echo "Downloading Prometheus ${PROMETHEUS_VERSION}..."
@@ -61,6 +62,7 @@ chown -R "$PROMETHEUS_USER:$PROMETHEUS_GROUP" "$INSTALL_DIR/node_exporter"
 chown -R "$PROMETHEUS_USER:$PROMETHEUS_GROUP" /etc/prometheus
 chown -R "$PROMETHEUS_USER:$PROMETHEUS_GROUP" /etc/alertmanager
 chown -R "$PROMETHEUS_USER:$PROMETHEUS_GROUP" /var/lib/prometheus
+chown -R "$PROMETHEUS_USER:$PROMETHEUS_GROUP" /var/lib/alertmanager
 
 # Copy Prometheus configuration file
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

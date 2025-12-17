@@ -8,6 +8,8 @@ The bot will perpetually track user activity when a user joins a voice channel, 
 
 There are three columns (each of string type) in the Postgres table that the bot writes to. `username` points to the discord user's username, `update_type` points to the specific event type in which the user made (options are `voice`, `message`, or `reaction`), and `date` is the timestamp (expressed as YYYY-MM-DD) for when the event occurred.
 
+For server hosting, Shear is standardized on utilizing the DigitalOcean (DO) Terraform provider and building an SSH key, firewall, and droplet resource. Once the server is up and running through `terraform apply`, copy the three "install" scripts (located in `/scripts`) to the server and execute them. For `install_prometheus.sh`, you will need to export two environment variables (titled `SMTP_PASSWORD` and `ALERT_EMAIL`). these correspond with the 16 digit SMTP password associated with your gmail account along with your gmail address (visit https://myaccount.google.com/apppasswords to generate a new SMTP password).
+
 <h2>Prerequisites</h2>
 To stand up your own implementation of Shear in your discord server, refer to these steps below:
 
@@ -47,5 +49,5 @@ To deploy your bot:
 
 - `!shear get-activity`
     - Pulls all records in the main postgres table and output all results to a .csv file in a separate message. You can download and open this file with Excel, Google Sheets, etc.
-= `!shear remove-user <username>`
+- `!shear remove-user <username>`
     - Removes a user from a discord server with a parameter of 'username'

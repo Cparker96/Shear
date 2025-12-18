@@ -39,7 +39,7 @@ resource "digitalocean_uptime_check" "cadvisor_uptime_check" {
 resource "digitalocean_uptime_alert" "shear_alert" {
   name       = "${var.server_name}-alert"
   check_id   = digitalocean_uptime_check.server_uptime_check.id
-  type       = "latency"
+  type       = "down"
   threshold  = 300
   comparison = "greater_than"
   period     = "2m"
@@ -54,7 +54,7 @@ resource "digitalocean_uptime_alert" "shear_alert" {
 resource "digitalocean_uptime_alert" "prometheus_alert" {
   name       = "prometheus-alert"
   check_id   = digitalocean_uptime_check.prometheus_uptime_check.id
-  type       = "latency"
+  type       = "down"
   threshold  = 300
   comparison = "greater_than"
   period     = "2m"
@@ -69,7 +69,7 @@ resource "digitalocean_uptime_alert" "prometheus_alert" {
 resource "digitalocean_uptime_alert" "alertmanager_alert" {
   name       = "alertmanager-alert"
   check_id   = digitalocean_uptime_check.alertmanager_uptime_check.id
-  type       = "latency"
+  type       = "down"
   threshold  = 300
   comparison = "greater_than"
   period     = "2m"
@@ -84,7 +84,7 @@ resource "digitalocean_uptime_alert" "alertmanager_alert" {
 resource "digitalocean_uptime_alert" "node_exporter_alert" {
   name       = "node-exporter-alert"
   check_id   = digitalocean_uptime_check.node_exporter_uptime_check.id
-  type       = "latency"
+  type       = "down"
   threshold  = 300
   comparison = "greater_than"
   period     = "2m"
@@ -99,7 +99,7 @@ resource "digitalocean_uptime_alert" "node_exporter_alert" {
 resource "digitalocean_uptime_alert" "cadvisor_alert" {
   name       = "cadvisor-alert"
   check_id   = digitalocean_uptime_check.cadvisor_uptime_check.id
-  type       = "latency"
+  type       = "down"
   threshold  = 300
   comparison = "greater_than"
   period     = "2m"

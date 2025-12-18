@@ -48,7 +48,6 @@ Group=root
 ExecStart=/opt/cadvisor/cadvisor \
   -port=8080 \
   -housekeeping_interval=30s \
-  -storage_driver=memory \
   -storage_driver_buffer_duration=60s \
   -storage_driver_db=/var/lib/cadvisor/cadvisor.db \
   -docker_only=true

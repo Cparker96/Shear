@@ -1,3 +1,9 @@
+### 12/18/2025
+
+<h3>Added</h3>
+
+- Deployed new DigitalOcean uptime checks and alerts for observing status of various services like Prometheus, Alertmanager, Node-Exporter, and cAdvisor
+
 ### 12/17/2025
 
 <h3>Updated</h3>

@@ -37,3 +37,19 @@ variable "source_address" {
   type        = string
   description = "Personal public IP"
 }
+
+variable "uptime_regions" {
+  type        = list(string)
+  description = "List of uptime regions"
+  default     = ["us-east", "us-west"]
+}
+
+variable "slack_channel" {
+  type        = string
+  description = "Slack channel name"
+}
+
+variable "slack_webhook_url" {
+  type        = string
+  description = "Slack webhook URL"
+}

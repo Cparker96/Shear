@@ -1,10 +1,11 @@
 package scheduler
 
 import (
+	"bytes"
 	"context"
+	"encoding/csv"
 	"fmt"
 	"log/slog"
-	"strings"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -42,14 +43,12 @@ func (cron *ScheduledCronJob) GetUserActivityWithTimeRanges() {
 
 	ctx := context.Background()
 
-	// Get all user events from the database
 	events, err := database.GetAllUserEvents(cron.conn, ctx, cron.logger)
 	if err != nil {
 		cron.logger.Error("Failed to fetch user events", "error", err)
 		return
 	}
 
-	// Get today's date in "2006-01-02" format
 	today := time.Now()
 	todayStr := today.Format("2006-01-02")
 	todayDate, err := time.Parse("2006-01-02", todayStr)
@@ -58,25 +57,20 @@ func (cron *ScheduledCronJob) GetUserActivityWithTimeRanges() {
 		return
 	}
 
-	// List to store users that exceed 4 months
 	var inactiveUsers []InactiveUser
 
-	// Loop through each record and calculate the delta
 	for _, event := range events {
-		// Skip if date is empty (NULL in database)
 		if event.Date == "" {
 			cron.logger.Warn("User has no date set, skipping inactivity check", "username", event.Username)
 			continue
 		}
 
-		// Parse the user's date string
 		userDate, err := time.Parse("2006-01-02", event.Date)
 		if err != nil {
 			cron.logger.Warn("Failed to parse user date", "username", event.Username, "date", event.Date, "error", err)
 			continue
 		}
 
-		// Calculate the delta (difference) between today and the user's date
 		delta := todayDate.Sub(userDate)
 		daysDelta := int(delta.Hours() / 24)
 
@@ -88,7 +82,6 @@ func (cron *ScheduledCronJob) GetUserActivityWithTimeRanges() {
 			"days_delta", daysDelta,
 		)
 
-		// Add to inactive users list if delta exceeds 90 days
 		if daysDelta > 120 {
 			inactiveUsers = append(inactiveUsers, InactiveUser{
 				Username:   event.Username,
@@ -99,64 +92,108 @@ func (cron *ScheduledCronJob) GetUserActivityWithTimeRanges() {
 		}
 	}
 
-	// Only send Discord message if there are inactive users found
 	if len(inactiveUsers) > 0 {
 		if cron.channelID == "" {
 			cron.logger.Warn("Inactive users found but no channel ID configured", "count", len(inactiveUsers))
-		} else {
-			// Get channel to find guild ID
-			channel, err := cron.session.Channel(cron.channelID)
-			if err != nil {
-				cron.logger.Error("Failed to get channel", "error", err)
-				return
-			}
-
-			// Find role by name from environment variable
-			roleMention := cron.findRoleMention(channel.GuildID, cron.roleName)
-
-			message := cron.formatInactiveUsersMessage(inactiveUsers, todayStr)
-
-			// Prepend role mention if found
-			content := message
-			if roleMention != "" {
-				content = roleMention + "\n\n" + message
-			}
-
-			_, err = cron.session.ChannelMessageSend(cron.channelID, content)
-			if err != nil {
-				cron.logger.Error("Failed to send Discord message", "error", err)
-			} else {
-				cron.logger.Info("Sent inactive users list to Discord", "count", len(inactiveUsers))
-			}
+			return
 		}
+
+		channel, err := cron.session.Channel(cron.channelID)
+		if err != nil {
+			cron.logger.Error("Failed to get channel", "error", err)
+			return
+		}
+
+		roleMention := cron.findRoleMention(channel.GuildID, cron.roleName)
+
+		// Build CSV
+		csvBuffer, err := cron.buildCSV(inactiveUsers)
+		if err != nil {
+			cron.logger.Error("Failed to build CSV", "error", err)
+			return
+		}
+
+		// Send summary message
+		summary := fmt.Sprintf(
+			"Users exceeding 120 days of inactivity: **%d**\nReport Date: %s\nSee attached CSV.",
+			len(inactiveUsers),
+			todayStr,
+		)
+
+		if roleMention != "" {
+			summary = roleMention + "\n\n" + summary
+		}
+
+		_, err = cron.session.ChannelMessageSend(cron.channelID, summary)
+		if err != nil {
+			cron.logger.Error("Failed to send summary message", "error", err)
+			return
+		}
+
+		// Send CSV file
+		_, err = cron.session.ChannelFileSend(
+			cron.channelID,
+			"inactive_users.csv",
+			csvBuffer,
+		)
+		if err != nil {
+			cron.logger.Error("Failed to send CSV file", "error", err)
+			return
+		}
+
+		cron.logger.Info("Sent inactive users CSV to Discord", "count", len(inactiveUsers))
 	} else {
-		cron.logger.Info("No inactive users found exceeding 90 day threshold")
+		cron.logger.Info("No inactive users found exceeding 120 day threshold")
 	}
 
-	cron.logger.Info("Completed scheduled cron job for user activity time deltas", "total_records", len(events), "inactive_users", len(inactiveUsers))
+	cron.logger.Info("Completed scheduled cron job for user activity time deltas",
+		"total_records", len(events),
+		"inactive_users", len(inactiveUsers),
+	)
 }
 
-func (cron *ScheduledCronJob) formatInactiveUsersMessage(users []InactiveUser, today string) string {
-	var builder strings.Builder
+func (cron *ScheduledCronJob) buildCSV(users []InactiveUser) (*bytes.Buffer, error) {
+	var buf bytes.Buffer
+	writer := csv.NewWriter(&buf)
 
-	builder.WriteString("## Users Exceeding 4 months of Inactivity\n\n")
-	builder.WriteString(fmt.Sprintf("**Report Date:** %s\n", today))
-	builder.WriteString(fmt.Sprintf("**Total Users:** %d\n\n", len(users)))
-	builder.WriteString(strings.Repeat("─", 40) + "\n\n")
+	// Header
+	if err := writer.Write([]string{"Username", "Last Activity", "Update Type", "Days Inactive"}); err != nil {
+		return nil, err
+	}
 
-	for i, user := range users {
-		builder.WriteString(fmt.Sprintf("**%d. %s**\n", i+1, user.Username))
-		builder.WriteString(fmt.Sprintf("   Last Activity: %s\n", user.UserDate))
-		builder.WriteString(fmt.Sprintf("   Update Type: %s\n", user.UpdateType))
-		builder.WriteString(fmt.Sprintf("   Days Inactive: **%d**\n", user.DaysDelta))
+	for _, user := range users {
+		// Optional: prevent CSV injection in Excel
+		username := sanitizeCSV(user.Username)
 
-		// Add separator between users (except for the last one)
-		if i < len(users)-1 {
-			builder.WriteString("\n" + strings.Repeat("─", 40) + "\n\n")
+		err := writer.Write([]string{
+			username,
+			user.UserDate,
+			user.UpdateType,
+			fmt.Sprintf("%d", user.DaysDelta),
+		})
+		if err != nil {
+			return nil, err
 		}
 	}
 
-	return builder.String()
+	writer.Flush()
+
+	if err := writer.Error(); err != nil {
+		return nil, err
+	}
+
+	return &buf, nil
+}
+
+// Prevent Excel formula injection (optional but smart)
+func sanitizeCSV(value string) string {
+	if len(value) > 0 {
+		switch value[0] {
+		case '=', '+', '-', '@':
+			return "'" + value
+		}
+	}
+	return value
 }
 
 func (cron *ScheduledCronJob) findRoleMention(guildID, roleName string) string {

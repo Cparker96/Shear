@@ -53,3 +53,13 @@ variable "slack_webhook_url" {
   type        = string
   description = "Slack webhook URL"
 }
+
+variable "domain_name" {
+  type = string
+  description = "Domain name for DNS"
+}
+
+variable "a_record" {
+  type = string
+  description = "DNS A record"
+}

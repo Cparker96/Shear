@@ -3,6 +3,7 @@
 <h3>Added</h3>
 
 - New `main.tfvars.example` file which lays out the required variables needed to execute the Terraform commands for infra management
+- Terraform resource records for creating/managing DNS domain and associated A record
 
 <h3>Updated</h3>
 

@@ -1,3 +1,13 @@
+### 04/21/2026
+
+<h3>Added</h3>
+
+- New `main.tfvars.example` file which lays out the required variables needed to execute the Terraform commands for infra management
+
+<h3>Updated</h3>
+
+- Changed message output in cron job from a single string to a .csv to avoid Discord message size constraints
+
 ### 12/18/2025
 
 <h3>Added</h3>

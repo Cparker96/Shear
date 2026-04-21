@@ -1,0 +1,11 @@
+server_name       = ""
+image             = ""
+region            = ""
+server_size       = ""
+ssh_path          = ""
+source_address    = ""
+firewall_name     = ""
+do_token          = ""
+uptime_regions    = [""]
+slack_channel     = ""
+slack_webhook_url = ""
